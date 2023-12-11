@@ -1,4 +1,5 @@
 import scala.collection.immutable.NumericRange
+import scala.util.{Failure, Success, Try}
 
 object day5 {
   val input: String = """seeds: 4239267129 20461805 2775736218 52390530 3109225152 741325372 1633502651 46906638 967445712 47092469 2354891449 237152885 2169258488 111184803 2614747853 123738802 620098496 291114156 2072253071 28111202
@@ -246,19 +247,26 @@ object day5 {
     mapIntervalSource
   }
 
-  def findNextInterval (previousEnd: Long, nextValidAlmanac: Almanac): Any = {
-    val nextStart = nextValidAlmanac.intervalSource.start
-    val delta = nextStart - previousEnd
-    delta match {
-      case negatif if (delta < 0)  => nextValidAlmanac
-      case 0 => nextValidAlmanac
-      case _ => val noMapInterval: NumericRange.Exclusive[Long] = previousEnd  until nextValidAlmanac.intervalSource.start
-        RangeSource(noMapInterval, noMapInterval.length)
+  def findNextInterval (previousEnd: Long, nextAlmanac: Try[Almanac], originRangeSource: RangeSource): Any = {
+    nextAlmanac match {
+      case Success(nextValidAlmanac) =>
+        val nextStart = nextValidAlmanac.intervalSource.start
+        val delta = nextStart - previousEnd
+        delta match {
+          case negatif if (delta < 0) => nextValidAlmanac
+          case 0 => nextValidAlmanac
+          case _ => val noMapInterval: NumericRange.Exclusive[Long] = previousEnd until nextValidAlmanac.intervalSource.start
+            RangeSource(noMapInterval, noMapInterval.length)
+        }
+
+      case Failure(exception) => val noEndMapInterval: NumericRange.Exclusive[Long] = previousEnd until originRangeSource.interval.end
+        RangeSource(noEndMapInterval, noEndMapInterval.length)
     }
+
   }
 
   def getRangeDestination(rangeSource: RangeSource, listInterval: AlmanacMap): List[RangeSource] = {
-    print(s"range source $rangeSource \n")
+    //print(s"range source $rangeSource \n")
     val validAlmanac: Array[Almanac] = listInterval.linesAlmanac.filter(x => x.intervalSource.contains(rangeSource.interval.start)
       || x.intervalSource.contains(rangeSource.interval.end) ||
       ((rangeSource.interval.start) < (x.intervalSource.start) && (x.intervalSource.end) < rangeSource.interval.end))
@@ -272,9 +280,9 @@ object day5 {
       var i = 1
       do{
         print(s"I : $i \n")
-        val newInterval: Any = findNextInterval(previousEnd, validAlmanac(indexValidAlmanac))
-        print(s"index valid $indexValidAlmanac \n")
-        print(s"new Intervalle : $newInterval and $previousEnd \n ")
+        val newInterval: Any = findNextInterval(previousEnd, Try(validAlmanac(indexValidAlmanac)), rangeSource)
+        //print(s"index valid $indexValidAlmanac \n")
+        //print(s"new Intervalle : $newInterval and $previousEnd \n ")
 
         val newSource: RangeSource = newInterval match {
           case noMapDestination: RangeSource =>
@@ -291,7 +299,7 @@ object day5 {
         newRangeSource = newRangeSource ++ List(newSource)
         i +=1
 
-      } while (previousEnd < rangeSource.interval.end )
+      } while (previousEnd <= rangeSource.interval.end )
 
       newRangeSource
 
@@ -337,22 +345,20 @@ object day5 {
     val almanacList: Array[AlmanacMap] = almanacArray.filterNot(_.startsWith("seeds:")).map(parseAlmanac)
 
     val soilRangeList: List[RangeSource] = seedsRange.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "seed-to-soil map").head))
-//
-//    val fertilizerRangeList: List[RangeSource] = soilRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "soil-to-fertilizer map").head)) // "soil-to-fertilizer map"
-//
-//    val waterRangeList =  fertilizerRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "fertilizer-to-water map").head))
-//
-//    val lightRangeList =  waterRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "water-to-light map").head))
-//
-//    val temperatureRangeList =  lightRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "light-to-temperature map").head))
-//
-//    val humidityRangeList =  temperatureRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "temperature-to-humidity map").head))
-//
-//    val locationRangeList =  humidityRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "humidity-to-location map").head))
-//
-//    locationRangeList.minBy(_.interval.start).interval.start
 
-    soilRangeList.minBy(_.interval.start).interval.start
+    val fertilizerRangeList: List[RangeSource] = soilRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "soil-to-fertilizer map").head)) // "soil-to-fertilizer map"
+
+    val waterRangeList =  fertilizerRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "fertilizer-to-water map").head))
+
+    val lightRangeList =  waterRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "water-to-light map").head))
+
+    val temperatureRangeList =  lightRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "light-to-temperature map").head))
+
+    val humidityRangeList =  temperatureRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "temperature-to-humidity map").head))
+
+    val locationRangeList =  humidityRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "humidity-to-location map").head))
+
+    locationRangeList.minBy(_.interval.start).interval.start
 
   }
 
