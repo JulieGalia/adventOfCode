@@ -251,7 +251,7 @@ object day5 {
   def findNextInterval (previousEnd: Long, nextAlmanac: Try[Almanac], originRangeSource: RangeSource): Any = {
     nextAlmanac match {
       case Success(nextValidAlmanac) =>
-        val nextStart = nextValidAlmanac.intervalSource.start //todo mettre slice range source ici
+        val nextStart = nextValidAlmanac.intervalSource.start
         val delta = nextStart - previousEnd
         delta match {
           case ok if (delta <= 0) => val newSourceInterval = sliceRangeSource(nextValidAlmanac,originRangeSource)
