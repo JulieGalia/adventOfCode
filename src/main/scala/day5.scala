@@ -191,6 +191,7 @@ object day5 {
   case class Source(x: Long)
   case class RangeSource(interval: NumericRange.Exclusive[Long], length: Long )
   case class Almanac (intervalSource: NumericRange.Exclusive[Long], intervalDest: NumericRange.Exclusive[Long], length:Long)
+  case class SlicedAlmanac (newIntervalSource : NumericRange.Exclusive[Long], oldAlmanac : Almanac )
   case class AlmanacMap (linesAlmanac: Array[Almanac], name: String)
 
 
@@ -228,21 +229,21 @@ object day5 {
   }
 
 
-  def calculateIntervalDestinationFromRangeSource(slicedSource: NumericRange.Exclusive[Long], almanac: Almanac): RangeSource = {
-    val delta: Long = (slicedSource.start) - (almanac.intervalSource.start)
-    val destinationStart: Long = delta + almanac.intervalDest.start
-    val destinationRange = destinationStart until destinationStart + slicedSource.length
-    RangeSource(destinationRange, slicedSource.length)
+  def calculateIntervalDestinationFromRangeSource(slicedAlmanac: SlicedAlmanac): RangeSource = {
+    val delta: Long = (slicedAlmanac.newIntervalSource.start) - (slicedAlmanac.oldAlmanac.intervalSource.start)
+    val destinationStart: Long = delta + slicedAlmanac.oldAlmanac.intervalDest.start
+    val destinationRange = destinationStart until destinationStart + slicedAlmanac.newIntervalSource.length
+    RangeSource(destinationRange, slicedAlmanac.newIntervalSource.length)
   }
 
 
 
   def sliceRangeSource(almanac: Almanac, rangeSource: RangeSource) :NumericRange.Exclusive[Long] = {
     val mapIntervalSource: NumericRange.Exclusive[Long] = almanac.intervalSource match {
+      case sourceInside if sourceInside.contains(rangeSource.interval.start) && sourceInside.contains(rangeSource.interval.end)  => rangeSource.interval
       case startInside if startInside.contains(rangeSource.interval.start) => (rangeSource.interval.start) until startInside.end
       case endInside if endInside.contains(rangeSource.interval.end) => (endInside.start) until  rangeSource.interval.end
-      case sourceInside if sourceInside.contains(rangeSource.interval.start) && sourceInside.contains(rangeSource.interval.end)  => rangeSource.interval
-      case subsetInside if (rangeSource.interval.start) < (subsetInside.start) && (subsetInside.end) < rangeSource.interval.end => almanac.intervalSource
+      case almanacInside if (rangeSource.interval.start) < (almanacInside.start) && (almanacInside.end) < rangeSource.interval.end => almanac.intervalSource
   }
     mapIntervalSource
   }
@@ -250,11 +251,11 @@ object day5 {
   def findNextInterval (previousEnd: Long, nextAlmanac: Try[Almanac], originRangeSource: RangeSource): Any = {
     nextAlmanac match {
       case Success(nextValidAlmanac) =>
-        val nextStart = nextValidAlmanac.intervalSource.start
+        val nextStart = nextValidAlmanac.intervalSource.start //todo mettre slice range source ici
         val delta = nextStart - previousEnd
         delta match {
-          case negatif if (delta < 0) => nextValidAlmanac
-          case 0 => nextValidAlmanac
+          case ok if (delta <= 0) => val newSourceInterval = sliceRangeSource(nextValidAlmanac,originRangeSource)
+            SlicedAlmanac(newSourceInterval, nextValidAlmanac)
           case _ => val noMapInterval: NumericRange.Exclusive[Long] = previousEnd until nextValidAlmanac.intervalSource.start
             RangeSource(noMapInterval, noMapInterval.length)
         }
@@ -277,7 +278,7 @@ object day5 {
       var newRangeSource: List[RangeSource]= List.empty[RangeSource]
       var previousEnd = rangeSource.interval.start
       var indexValidAlmanac = 0
-      var i = 1
+      //var i = 1
       do{
         //print(s"I : $i \n")
         val newInterval: Any = findNextInterval(previousEnd, Try(validAlmanac(indexValidAlmanac)), rangeSource)
@@ -288,18 +289,16 @@ object day5 {
           case noMapDestination: RangeSource =>
             previousEnd = noMapDestination.interval.end
             noMapDestination
-          case almanac: Almanac =>
+          case slicedAlmanac: SlicedAlmanac =>
             indexValidAlmanac += 1
-            val slicedSource: NumericRange.Exclusive[Long] = sliceRangeSource(almanac, rangeSource)
-            previousEnd = slicedSource.end
-            calculateIntervalDestinationFromRangeSource(slicedSource, almanac)
+            previousEnd = slicedAlmanac.newIntervalSource.end
+            calculateIntervalDestinationFromRangeSource(slicedAlmanac)
         }
 
        // print(s"new previous $previousEnd")
         newRangeSource = newRangeSource ++ List(newSource)
-        i +=1
 
-      } while (previousEnd <= rangeSource.interval.end )
+      } while (previousEnd < rangeSource.interval.end )
 
       newRangeSource
 
@@ -363,6 +362,7 @@ object day5 {
   }
 
 
+  p2(input)
 
 
 }
