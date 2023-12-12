@@ -279,7 +279,7 @@ object day5 {
       var indexValidAlmanac = 0
       var i = 1
       do{
-        print(s"I : $i \n")
+        //print(s"I : $i \n")
         val newInterval: Any = findNextInterval(previousEnd, Try(validAlmanac(indexValidAlmanac)), rangeSource)
         //print(s"index valid $indexValidAlmanac \n")
         //print(s"new Intervalle : $newInterval and $previousEnd \n ")
@@ -295,7 +295,7 @@ object day5 {
             calculateIntervalDestinationFromRangeSource(slicedSource, almanac)
         }
 
-        print(s"new previous $previousEnd")
+       // print(s"new previous $previousEnd")
         newRangeSource = newRangeSource ++ List(newSource)
         i +=1
 
@@ -346,17 +346,17 @@ object day5 {
 
     val soilRangeList: List[RangeSource] = seedsRange.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "seed-to-soil map").head))
 
-    val fertilizerRangeList: List[RangeSource] = soilRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "soil-to-fertilizer map").head)) // "soil-to-fertilizer map"
+    val fertilizerRangeList: List[RangeSource] = soilRangeList.flatMap(soil => getRangeDestination(soil, almanacList.filter(_.name == "soil-to-fertilizer map").head)) // "soil-to-fertilizer map"
 
-    val waterRangeList =  fertilizerRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "fertilizer-to-water map").head))
+    val waterRangeList =  fertilizerRangeList.flatMap(fertilizer => getRangeDestination(fertilizer, almanacList.filter(_.name == "fertilizer-to-water map").head))
 
-    val lightRangeList =  waterRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "water-to-light map").head))
+    val lightRangeList =  waterRangeList.flatMap(water => getRangeDestination(water, almanacList.filter(_.name == "water-to-light map").head))
 
-    val temperatureRangeList =  lightRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "light-to-temperature map").head))
+    val temperatureRangeList =  lightRangeList.flatMap(light => getRangeDestination(light, almanacList.filter(_.name == "light-to-temperature map").head))
 
-    val humidityRangeList =  temperatureRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "temperature-to-humidity map").head))
+    val humidityRangeList =  temperatureRangeList.flatMap(temperature => getRangeDestination(temperature, almanacList.filter(_.name == "temperature-to-humidity map").head))
 
-    val locationRangeList =  humidityRangeList.flatMap(seeds => getRangeDestination(seeds, almanacList.filter(_.name == "humidity-to-location map").head))
+    val locationRangeList =  humidityRangeList.flatMap(humidity => getRangeDestination(humidity, almanacList.filter(_.name == "humidity-to-location map").head))
 
     locationRangeList.minBy(_.interval.start).interval.start
 
